@@ -2,8 +2,8 @@ TIMED=../../timed.sh
 
 MINIML=guile ../compiler/compile.scm std_miniml_prefix.ml --open Std_miniml_prefix std.ml --open Std std_miniml.ml --open Std_miniml
 
-OCAMLRUN=../../ocaml-src/byterun/ocamlrun
-OCAMLLEX=../../ocaml-src/byterun/ocamlrun ../../ocaml-src/boot/ocamllex
+OCAMLRUN=../../ocaml-src/runtime/ocamlrun
+OCAMLLEX=../../ocaml-src/runtime/ocamlrun ../../ocaml-src/boot/ocamllex
 OCAMLYACC=../../ocaml-src/yacc/ocamlyacc
 
 COMMONOBJS=int32.ml int64.ml nativeint.ml seq.ml char.ml bytes.ml string.ml digest.ml marshal.ml array.ml list.ml stack.ml hashtbl.ml map.ml set.ml buffer.ml format.ml printf.ml arg.ml gc.ml filename.ml lexing.ml parsing.ml
@@ -55,7 +55,7 @@ makedepend.byte: $(DEPENDOBJS)
 
 INTERPCMX=$(filter %.cmx,$(INTERPOBJS:.ml=.cmx))
 interpopt.opt: interp.byte stdopt.cmx $(INTERPCMX) stdopt_exit.cmx
-	$(OPTCOMPILE) ../../ocaml-src/asmrun/libasmrun.a $(filter %.cmx, $^) -o $@ -ccopt "-lm -lpthread -ldl"
+	$(OPTCOMPILE) ../../ocaml-src/runtime/libasmrun.a $(filter %.cmx, $^) -o $@ -ccopt "-lm -lpthread -ldl"
 
 lexer.ml: lex.byte lexer.mll
 	$(OCAMLRUN) lex.byte lexer.mll

@@ -7,7 +7,7 @@
 
 (define rec-closure-step 2)
 (define has-custom-fixed #f)
-(define magic "Caml1999X023")
+(define magic "Caml1999X026")
 
 (define error-code-syntax 3)
 

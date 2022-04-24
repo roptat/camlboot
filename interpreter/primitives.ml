@@ -263,6 +263,9 @@ let prims =
         wrap_string );
     ("caml_input_value", prim1 input_value unwrap_in_channel id);
     ("caml_sys_exit", prim1 exit unwrap_int wrap_unit);
+    ("caml_sys_executable_name", 
+     ptr @@ Prim
+       (fun _ -> ptr @@ wrap_string "ocamlopt"));
     ("caml_parse_engine", parse_engine_prim);
     ("caml_lex_engine", lex_engine_prim);
     ("caml_new_lex_engine", new_lex_engine_prim);

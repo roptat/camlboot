@@ -171,8 +171,8 @@ compile bytecomp/translmod.mli
 compile bytecomp/translmod.ml
 compile bytecomp/simplif.mli
 compile bytecomp/simplif.ml
-compile bytecomp/runtimedef.mli
-compile bytecomp/runtimedef.ml
+compile lambda/runtimedef.mli
+compile lambda/runtimedef.ml
 compile bytecomp/instruct.mli
 compile bytecomp/meta.mli
 compile bytecomp/meta.ml

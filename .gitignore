@@ -8,3 +8,4 @@ miniml/interp/parser.ml
 miniml/interp/parser.mli
 miniml/interp/out.ml
 miniml/interp/out.byte
+miniml/interp/interp.byte

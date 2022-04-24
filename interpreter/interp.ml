@@ -23,6 +23,13 @@ let stdlib_units =
   (no_stdlib_flag, fullpath "stdlib.ml")
   ::
   List.map (fun file -> stdlib_flag, fullpath file) [
+    "bool.ml";
+    "fun.ml";
+    "int.ml";
+    "unit.ml";
+    "option.ml";
+    "pervasives.ml";
+    "result.ml";
     "sys.ml";
     "callback.ml";
     "complex.ml";
@@ -45,6 +52,8 @@ let stdlib_units =
     "camlinternalFormat.ml";
     "printf.ml";
     "scanf.ml";
+    "queue.ml";
+    "stack.ml";
     "format.ml";
     "obj.ml";
     "gc.ml";
@@ -55,8 +64,6 @@ let stdlib_units =
     "printexc.ml";
     "array.ml";
     "arrayLabels.ml";
-    "sort.ml";
-    "queue.ml";
     "int64.ml";
     "int32.ml";
     "nativeint.ml";
@@ -68,7 +75,6 @@ let stdlib_units =
     "weak.ml";
     "ephemeron.ml";
     "spacetime.ml";
-    "stack.ml";
     "arg.ml";
     "filename.ml";
     "marshal.ml";
@@ -112,7 +118,6 @@ module Compiler_files = struct
     "numbers.ml";
     "arg_helper.ml";
     "clflags.ml";
-    "tbl.ml";
     "profile.ml";
     "terminfo.ml";
     "ccomp.ml";
@@ -121,9 +126,11 @@ module Compiler_files = struct
     "strongly_connected_components.ml";
     "build_path_prefix_map.ml";
     "targetint.ml";
+    "int_replace_polymorphic_compare.ml"
   ]
 
   let parsing = List.map (Filename.concat "parsing") [
+    "camlinternalMenhirLib.ml";
     "asttypes.mli";
     "location.ml";
     "longident.ml";
@@ -144,6 +151,10 @@ module Compiler_files = struct
     "depend.ml";
   ]
 
+  let file_formats = List.map (Filename.concat "file_formats") [
+    "cmi_format.ml";
+  ]
+
   let pure_typing = List.map (Filename.concat "typing") [
     "ident.ml";
     "outcometree.mli";
@@ -156,7 +167,7 @@ module Compiler_files = struct
     "subst.ml";
     "predef.ml";
     "datarepr.ml";
-    "cmi_format.ml";
+    "persistent_env.ml";
     "env.ml";
     "typedtree.ml";
     "printtyped.ml";
@@ -166,20 +177,25 @@ module Compiler_files = struct
     "mtype.ml";
     "envaux.ml";
     "includecore.ml";
-    "typedtreeIter.ml";
-    "typedtreeMap.ml";
     "tast_mapper.ml";
-    "cmt_format.ml";
     "untypeast.ml";
     "includemod.ml";
     "typetexp.ml";
     "printpat.ml";
     "parmatch.ml";
     "stypes.ml";
+    "typedecl_unboxed.ml";
     "typedecl.ml";
   ]
 
-  let lambda = List.map (Filename.concat "bytecomp") [
+  let more_file_formats = List.map (Filename.concat "file_formats") [
+    "cmt_format.ml";
+    "cmo_format.mli";
+    "cmx_format.mli";
+    "cmxs_format.mli";
+  ]
+
+  let lambda = List.map (Filename.concat "lambda") [
     "lambda.ml";
   ]
 
@@ -190,10 +206,8 @@ module Compiler_files = struct
     "typemod.ml";
   ]
 
-  let bytecomp = List.map (Filename.concat "bytecomp") [
-    "cmo_format.mli";
+  let more_lambda = List.map (Filename.concat "lambda") [
     "printlambda.ml";
-    "semantics_of_primitives.ml";
     "switch.ml";
     "matching.ml";
     "translobj.ml";
@@ -204,6 +218,10 @@ module Compiler_files = struct
     "translmod.ml";
     "simplif.ml";
     "runtimedef.ml";
+    "debuginfo.ml";
+  ]
+
+  let bytecomp = List.map (Filename.concat "bytecomp") [
     "meta.ml";
     "opcodes.ml";
     "bytesections.ml";
@@ -216,33 +234,32 @@ module Compiler_files = struct
     "main_args.ml";
     "compenv.ml";
     "compmisc.ml";
-    "compdynlink.mlno";
-    "compplugin.ml";
     "makedepend.ml";
   ]
 
   let middle_end = List.map (Filename.concat "middle_end") [
-    "base_types/id_types.ml";
-    "base_types/compilation_unit.ml";
-    "base_types/set_of_closures_id.ml";
-    "base_types/symbol.ml";
-    "base_types/variable.ml";
-    "base_types/closure_element.ml";
-    "base_types/closure_id.ml";
-    "base_types/var_within_closure.ml";
-    "base_types/linkage_name.ml";
-    "flambda_utils.ml";
-    "simple_value_approx.ml";
-    "debuginfo.ml";
+    "semantics_of_primitives.ml";
+    "flambda/base_types/id_types.ml";
+    "compilation_unit.ml";
+    "flambda/base_types/set_of_closures_id.ml";
+    "symbol.ml";
+    "variable.ml";
+    "flambda/base_types/closure_element.ml";
+    "flambda/base_types/closure_id.ml";
+    "flambda/base_types/var_within_closure.ml";
+    "linkage_name.ml";
+    "flambda/flambda_utils.ml";
+    "flambda/simple_value_approx.ml";
+    "clambda.ml";
+    "flambda/export_info.ml";
+    "compilenv.ml";
+    "flambda/import_approx.ml";
+    "backend_var.ml";
+    "clambda_primitives.ml";
+    "closure/closure.ml";
   ]
 
   let asmcomp = List.map (Filename.concat "asmcomp") [
-    "cmx_format.mli";
-    "clambda.ml";
-    "export_info.ml";
-    "compilenv.ml";
-    "import_approx.ml";
-
     "debug/reg_with_debug_info.ml";
     "debug/reg_availability_set.ml";
     "debug/available_regs.ml";
@@ -262,7 +279,6 @@ module Compiler_files = struct
     "spacetime_profiling.ml";
     "selection.ml";
 
-    "closure.ml";
     "strmatch.ml";
     "cmmgen.ml";
     "linearize.ml";
@@ -306,6 +322,7 @@ module Compiler_files = struct
 
   let native_main = List.map (Filename.concat "driver") [
     "opterrors.ml";
+    "compile_common.ml";
     "optcompile.ml";
     "optmain.ml";
   ]
@@ -317,9 +334,12 @@ let bytecode_compiler_units =
   List.map (fun modfile -> stdlib_flag, fullpath modfile)
   ( Compiler_files.utils
   @ Compiler_files.parsing
+  @ Compiler_files.file_formats
   @ Compiler_files.pure_typing
+  @ Compiler_files.more_file_formats
   @ Compiler_files.lambda
   @ Compiler_files.more_typing
+  @ Compiler_files.more_lambda
   @ Compiler_files.bytecomp
   @ Compiler_files.driver
   @ Compiler_files.bytegen
@@ -332,9 +352,12 @@ let native_compiler_units =
   List.map (fun modfile -> stdlib_flag, fullpath modfile)
   ( Compiler_files.utils
   @ Compiler_files.parsing
+  @ Compiler_files.file_formats
   @ Compiler_files.pure_typing
+  @ Compiler_files.more_file_formats
   @ Compiler_files.lambda
   @ Compiler_files.more_typing
+  @ Compiler_files.more_lambda
   @ Compiler_files.bytecomp
   @ Compiler_files.driver
   @ Compiler_files.middle_end

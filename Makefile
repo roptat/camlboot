@@ -1,14 +1,13 @@
 BOOT=_boot
 OCAMLSRC=ocaml-src
-CONFIG=$(OCAMLSRC)/config/Makefile
-OCAMLRUN=$(OCAMLSRC)/byterun/ocamlrun
+CONFIG=$(OCAMLSRC)/Makefile.config
+OCAMLRUN=$(OCAMLSRC)/runtime/ocamlrun
 GENERATED=$(OCAMLSRC)/bytecomp/opcodes.ml
 
 $(OCAMLRUN): $(CONFIG)
-	touch $(OCAMLSRC)/byterun/.depend && $(MAKE) -C $(OCAMLSRC)/byterun depend
-	$(MAKE) -C $(OCAMLSRC)/byterun all
-	touch $(OCAMLSRC)/asmrun/.depend && $(MAKE) -C $(OCAMLSRC)/asmrun depend
-	$(MAKE) -C $(OCAMLSRC)/asmrun all
+	touch $(OCAMLSRC)/runtime/.depend && $(MAKE) -C $(OCAMLSRC)/runtime depend
+	$(MAKE) -C $(OCAMLSRC)/runtime all
+	cp $(OCAMLSRC)/runtime/ocamlrun $(OCAMLSRC)/boot/
 
 .PHONY: configure-ocaml
 configure-ocaml:
@@ -19,16 +18,25 @@ configure-ocaml:
 	$(MAKE) -C $(OCAMLSRC) ocamlyacc && cp $(OCAMLSRC)/yacc/ocamlyacc $(OCAMLSRC)/boot
 	$(MAKE) -C $(OCAMLSRC)/lex parser.ml
 
+.PHONY: ocaml-parser
+ocaml-parser:
+	menhir --explain --dump --lalr --strict --table -lg 1 -la 1 --unused-token COMMENT --unused-token DOCSTRING --unused-token EOL --unused-token GREATERRBRACKET --fixed-exception $(OCAMLSRC)/parsing/parser.mly
+	cp $(OCAMLSRC)/parsing/parser.ml{,i} $(OCAMLSRC)/boot/menhir/
+	cp $(OCAMLSRC)/boot/menhir/menhirLib.ml $(OCAMLSRC)/parsing/camlinternalMenhirLib.ml
+	cp $(OCAMLSRC)/boot/menhir/menhirLib.mli $(OCAMLSRC)/parsing/camlinternalMenhirLib.mli
+	chmod +w $(OCAMLSRC)/parsing/parser.ml{,i}
+	sed "s/MenhirLib/CamlinternalMenhirLib/g" $(OCAMLSRC)/boot/menhir/parser.ml > $(OCAMLSRC)/parsing/parser.ml
+	sed "s/MenhirLib/CamlinternalMenhirLib/g" $(OCAMLSRC)/boot/menhir/parser.mli > $(OCAMLSRC)/parsing/parser.mli
+
 # Here, including $(CONFIG) would provide $(ARCH), but it leads to a recursive
 # dependency because its rule has a dependency that reloads this Makefile.
 .PHONY: ocaml-generated-files
-ocaml-generated-files: $(OCAMLRUN) lex make_opcodes cvt_emit
+ocaml-generated-files: $(OCAMLRUN) lex make_opcodes cvt_emit ocaml-parser
 	$(MAKE) -C $(OCAMLSRC)/stdlib sys.ml
 	$(MAKE) -C $(OCAMLSRC) utils/config.ml
-	$(MAKE) -C $(OCAMLSRC) parsing/parser.ml
 	cd $(OCAMLSRC); ../miniml/interp/lex.sh parsing/lexer.mll
-	$(MAKE) -C $(OCAMLSRC) bytecomp/runtimedef.ml
-	miniml/interp/make_opcodes.sh -opcodes < $(OCAMLSRC)/byterun/caml/instruct.h > $(OCAMLSRC)/bytecomp/opcodes.ml
+	$(MAKE) -C $(OCAMLSRC) lambda/runtimedef.ml
+	miniml/interp/make_opcodes.sh -opcodes < $(OCAMLSRC)/runtime/caml/instruct.h > $(OCAMLSRC)/bytecomp/opcodes.ml
 	$(MAKE) -C $(OCAMLSRC) asmcomp/arch.ml asmcomp/proc.ml asmcomp/selection.ml asmcomp/CSE.ml asmcomp/reload.ml asmcomp/scheduling.ml
 	miniml/interp/cvt_emit.sh < $(OCAMLSRC)/asmcomp/$(shell cat $(CONFIG) | grep '^ARCH=' | cut -f2 -d=)/emit.mlp > $(OCAMLSRC)/asmcomp/emit.ml
 
@@ -67,13 +75,7 @@ $(BOOT)/driver: $(OCAMLSRC)/driver $(OCAMLSRC)/otherlibs/dynlink $(CONFIG) $(GEN
 	rm -rf $@
 	cp -r $< $@
 	cp $(OCAMLSRC)/otherlibs/dynlink/dynlink.mli $@/compdynlink.mli
-	grep -v 'REMOVE_ME for ../../debugger/dynlink.ml' \
-	     $(OCAMLSRC)/otherlibs/dynlink/dynlink.ml > $@/compdynlink.mlbyte
-
-$(BOOT)/byterun: $(OCAMLSRC)/byterun $(CONFIG) $(GENERATED)
-	mkdir -p $(BOOT)
-	rm -rf $@
-	cp -r $< $@
+	cp $(OCAMLSRC)/otherlibs/dynlink/byte/dynlink.ml $@/compdynlink.ml
 
 $(BOOT)/bytecomp: $(OCAMLSRC)/bytecomp $(CONFIG) $(GENERATED)
 	mkdir -p $(BOOT)
@@ -105,12 +107,12 @@ $(BOOT)/stdlib: $(OCAMLSRC)/stdlib $(CONFIG) $(GENERATED) patches/compflags.patc
 	patch $(BOOT)/stdlib/Compflags patches/compflags.patch
 	awk -f $(BOOT)/stdlib/expand_module_aliases.awk < $(BOOT)/stdlib/stdlib.mli > $(BOOT)/stdlib/stdlib.pp.mli
 	awk -f $(BOOT)/stdlib/expand_module_aliases.awk < $(BOOT)/stdlib/stdlib.ml > $(BOOT)/stdlib/stdlib.pp.ml
-	cp $(OCAMLSRC)/asmrun/libasmrun.a $(BOOT)/stdlib/
+	$(MAKE) -C $(OCAMLSRC) runtime/libasmrun.a
+	cp $(OCAMLSRC)/runtime/libasmrun.a $(BOOT)/stdlib/
 	cp Makefile.stdlib $(BOOT)/stdlib/Makefile
 
 COPY_TARGETS=\
 	$(BOOT)/bytecomp \
-	$(BOOT)/byterun \
 	$(BOOT)/driver \
 	$(BOOT)/parsing \
 	$(BOOT)/stdlib \
@@ -140,16 +142,16 @@ $(BOOT)/ocamlc: copy makedepend
 fullboot:
 	cp $(BOOT)/ocamlc $(OCAMLSRC)/boot/
 	cp miniml/interp/lex.byte $(OCAMLSRC)/boot/ocamllex
-	cp $(OCAMLSRC)/byterun/ocamlrun $(OCAMLSRC)/boot/ocamlrun$(EXE)
+	cp $(OCAMLRUN) $(OCAMLSRC)/boot/ocamlrun$(EXE)
 	touch $(OCAMLSRC)/stdlib/.depend && ./timed.sh $(MAKE) $(MAKEFLAGS) -C $(OCAMLSRC)/stdlib CAMLDEP="../boot/ocamlc -depend" depend
-	./timed.sh $(MAKE) $(MAKEFLAGS) -C $(OCAMLSRC)/stdlib COMPILER="" CAMLC="../boot/ocamlc -use-prims ../byterun/primitives" all
+	./timed.sh $(MAKE) $(MAKEFLAGS) -C $(OCAMLSRC)/stdlib COMPILER="" CAMLC="../boot/ocamlc -use-prims ../runtime/primitives" all
 	cd $(OCAMLSRC)/stdlib; cp stdlib.cma std_exit.cmo *.cmi camlheader ../boot
-	cd $(OCAMLSRC)/boot; ln -sf ../byterun/libcamlrun.a .
-	touch $(OCAMLSRC)/tools/.depend &&  ./timed.sh $(MAKE) $(MAKEFLAGS) -C $(OCAMLSRC)/tools CAMLC="../boot/ocamlc -nostdlib -I ../boot -use-prims ../byterun/primitives -I .." make_opcodes cvt_emit
+	cd $(OCAMLSRC)/boot; ln -sf ../runtime/libcamlrun.a .
+	touch $(OCAMLSRC)/tools/.depend &&  ./timed.sh $(MAKE) $(MAKEFLAGS) -C $(OCAMLSRC)/tools CAMLC="../boot/ocamlc -nostdlib -I ../boot -use-prims ../runtime/primitives -I .." make_opcodes cvt_emit
 	touch $(OCAMLSRC)/lex/.depend && ./timed.sh $(MAKE) $(MAKEFLAGS) -C $(OCAMLSRC)/lex CAMLDEP="../boot/ocamlc -depend" depend
 	./timed.sh $(MAKE) $(MAKEFLAGS) -C $(OCAMLSRC) CAMLDEP="boot/ocamlc -depend" depend
-	./timed.sh $(MAKE) $(MAKEFLAGS) -C $(OCAMLSRC) CAMLC="boot/ocamlc -nostdlib -I boot -use-prims byterun/primitives" ocamlc
-	./timed.sh $(MAKE) $(MAKEFLAGS) -C $(OCAMLSRC)/lex CAMLC="../boot/ocamlc -strict-sequence -nostdlib -I ../boot -use-prims ../byterun/primitives" all
+	./timed.sh $(MAKE) $(MAKEFLAGS) -C $(OCAMLSRC) CAMLC="boot/ocamlc -nostdlib -I boot -use-prims runtime/primitives" ocamlc
+	./timed.sh $(MAKE) $(MAKEFLAGS) -C $(OCAMLSRC)/lex CAMLC="../boot/ocamlc -strict-sequence -nostdlib -I ../boot -use-prims ../runtime/primitives" all
 
 .PHONY: test-compiler
 test-compiler: $(OCAMLRUN)
